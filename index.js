@@ -2,6 +2,12 @@ const { Client, Intents, MessageEmbed } = require('discord.js')
 const { prefix, token } = require('./config.json')
 const fs = require('fs').promises
 
+const insults = [
+  'Fuck you',
+  'You a dumb bitch',
+  'You ugly'
+]
+
 const client = new Client()
 
 let sprinters = []
@@ -27,7 +33,7 @@ client.on('message', async (message) => {
     const command = args.shift().toLowerCase()
     const diceRegex = /(\d+)?[d](\d+)/i
 
-    switch(command) {    
+    switch(command) {
       case 'setdefault':
         const data = JSON.parse(await fs.readFile('./sprintConfig.json'))
         if(!data.hasOwnProperty('default'+args[0]) || !parseInt(args[1])) return message.reply(`Sorry, that setting was invalid`)
@@ -75,6 +81,9 @@ client.on('message', async (message) => {
           else return message.reply(rollDice(false, diceToRoll[1]))
         } else if (args[0] && !diceRegex.test(args[0])) return message.reply(`Roll a specific die or dice by writing \`${prefix}roll d<dienumber>\` or \`${prefix}roll <numofdie>d<dienumber>\``)
         else return message.reply(rollDice())
+
+      case 'insult':
+        return message.channel.send(randomInsult()) + (args[0] ? ', ' + args[0] : '')
 
       case 'help':
         const embed = new MessageEmbed()
@@ -183,6 +192,10 @@ function rollDice(quantity, type) {
   } else {
     return random(6, 1)
   }
+}
+
+function randomInsult() {
+  return insults[random(insults.length-1,0)]
 }
 
 function random(max, min = 0) {
