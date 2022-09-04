@@ -7,6 +7,7 @@ const client = new Client()
 let sprinters = []
 let sprintObjectStarting
 let sprintObjectRunning
+let sprintObjectResults
 let sprintIsStarting = false
 let sprintIsFinished = false
 
@@ -54,6 +55,7 @@ client.on('message', async (message) => {
         sprintIsStarting = false
         clearTimeout(sprintObjectStarting)
         clearTimeout(sprintObjectRunning)
+        clearTimeout(sprintObjectResults)
         return message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
         
       case 'wc':
@@ -133,7 +135,7 @@ async function sprint(message, time, bufferStart, bufferEnd) {
     }, startingBufferTime + sprintingTime)
 
     // Results of sprint message
-    setTimeout(() => {
+    sprintObjectResults = setTimeout(() => {
       message.channel.send(`The results are in:\r\n${finishedList(time)}`)
       sprintIsFinished = false
     }, startingBufferTime + sprintingTime + endingBufferTime)
@@ -164,7 +166,7 @@ function finishedList(time) {
     return 0
   })
   let result = sprinters.map((author, index) => {
-    return `${index + 1}. ${author.name} with ${author.delta} new words, (${Math.round(author.delta / time, 2)} wpm)`
+    return `${index + 1}. ${author.name} with ${author.delta} new words (${Math.round(author.delta / time, 2)} wpm)`
   })
   return result.join('\r\n')
 }
