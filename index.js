@@ -1,5 +1,6 @@
 const { Client, Intents, MessageEmbed } = require('discord.js')
 const { prefix, token } = require('./config.json')
+const fs = require('fs').promises
 
 const client = new Client()
 
@@ -25,7 +26,14 @@ client.on('message', async (message) => {
     const command = args.shift().toLowerCase()
     const diceRegex = /(\d+)?[d](\d+)/i
 
-    switch(command) {      
+    switch(command) {    
+      case 'setdefault':
+        const data = JSON.parse(await fs.readFile('./sprintConfig.json'))
+        if(!data.hasOwnProperty('default'+args[0]) || !parseInt(args[1])) return message.reply(`Sorry, that setting was invalid`)
+        data['default'+args[0]] = parseInt(args[1])
+        await fs.writeFile('./sprintConfig.json', JSON.stringify(data, null, 4))
+        return message.reply(`Default ${args[0].toLowerCase()} set to ${args[1]} minutes! Will apply on next sprint`)
+      
       case 'sprint':
         if (sprintIsStarting) return message.reply(`There's already a sprint running! Join in using ${prefix}join #`)
         sprintIsStarting = true
@@ -74,6 +82,7 @@ client.on('message', async (message) => {
 ${prefix}sprint
 ${prefix}sprint #(time)
 ${prefix}sprint #(time) #(buffer)
+${prefix}setdefault <Time|BufferStart|BufferEnd> #(value)
 ${prefix}join
 ${prefix}join #(word count)
 ${prefix}cancel
@@ -96,7 +105,13 @@ ${prefix}roll #(die amount)d#(die number)
 client.login(token)
 
 // Functions
-async function sprint(message, time = 1, bufferStart = 1, bufferEnd = 3) {
+async function sprint(message, time, bufferStart, bufferEnd) {
+  const { defaultTime, defaultBufferStart, defaultBufferEnd } = JSON.parse(await fs.readFile('./sprintConfig.json'))
+
+  if(!time) time = defaultTime
+  if(!bufferStart) bufferStart = defaultBufferStart
+  if(!bufferEnd) bufferEnd = defaultBufferEnd
+
   let sprintingTime = time * 60 * 1000
   let startingBufferTime = bufferStart * 60 * 1000
   let endingBufferTime = bufferEnd * 60 * 1000
