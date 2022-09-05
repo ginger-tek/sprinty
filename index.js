@@ -1,21 +1,9 @@
-const { Client, Intents, MessageEmbed } = require('discord.js')
-const { prefix, token } = require('./config.json')
-const fs = require('fs').promises
-
-const insults = [
-  'Fuck you',
-  'You a dumb bitch',
-  'You ugly'
-]
-
+const { Client, MessageEmbed } = require('discord.js')
+const { readConfig, writeConfig, rollDice, ms } = require('./utils')
+const { token } = require('./config.json')
 const client = new Client()
 
-let sprinters = []
-let sprintObjectStarting
-let sprintObjectRunning
-let sprintObjectResults
-let sprintIsStarting = false
-let sprintIsFinished = false
+const sprints = {}
 
 client.once('ready', () => {
   console.clear()
@@ -24,180 +12,129 @@ client.once('ready', () => {
 })
 
 client.on('message', async (message) => {
-  if (!message.content.startsWith(prefix) || message.author.bot) return
+  const { guild, author, content } = message
+  const guildId = guild.id
+  const { prefix, defaults } = await readConfig(guildId)
 
-  console.log(`${message.author.username} => ${message.content}`)
+  if (!content.startsWith(prefix) || author.bot) return
+
+  if (!sprints[guildId]) sprints[guildId] = {
+    sprinters: [],
+    isStarting: false,
+    isFinished: false,
+    startingTimer: null,
+    runningTimer: null,
+    resultsTimer: null
+  }
+
+  console.log(`${guildId}: ${author.username} => ${content}`)
+
+  const args = content.slice(prefix.length).trim().split(/ +/)
+  const command = args.shift().toLowerCase()
+  const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
   try {
-    const args = message.content.slice(prefix.length).trim().split(/ +/)
-    const command = args.shift().toLowerCase()
-    const diceRegex = /(\d+)?[d](\d+)/i
-
-    switch(command) {
+    switch (command) {
       case 'setdefault':
-        const data = JSON.parse(await fs.readFile('./sprintConfig.json'))
-        if(!data.hasOwnProperty('default'+args[0]) || !parseInt(args[1])) return message.reply(`Sorry, that setting was invalid`)
-        data['default'+args[0]] = parseInt(args[1])
-        await fs.writeFile('./sprintConfig.json', JSON.stringify(data, null, 4))
-        return message.reply(`Default ${args[0].toLowerCase()} set to ${args[1]} minutes! Will apply on next sprint`)
-      
-      case 'sprint':
-        if (sprintIsStarting) return message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
-        sprintIsStarting = true
-        sprinters = []
-        message.channel.send('**Sprinting!**')
-        if (args[0] && args[1]) await sprint(message, parseInt(args[0]), parseInt(args[1]))
-        else if (args[0]) await sprint(message, parseInt(args[0]))
-        else await sprint(message)
-        return null
-        
-      case 'join':
-        if (!sprintIsStarting) return message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
-        if (parseInt(args[0])) addAndUpdateSprinters(message, args[0])
-        else addAndUpdateSprinters(message)
-        return null
-        
-      case 'cancel':
-        sprintIsStarting = false
-        clearTimeout(sprintObjectStarting)
-        clearTimeout(sprintObjectRunning)
-        clearTimeout(sprintObjectResults)
-        return message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
-        
-      case 'wc':
-        if (!sprintIsFinished) return message.reply(`The sprint is still running! Try again later`)
-        if (!parseInt(args[0])) return message.reply(`I didn't catch that, try again!`)
-        index = sprinters.findIndex((sprinter) => sprinter.name === message.author.username)
-        if(index == -1) return message.reply(`You need to join the sprint first! Use \`${prefix}join\``)
-        delta = parseInt(args[0]) - sprinters[index].wordcount
-        sprinters[index].wordcount = args[0]
-        sprinters[index].delta = delta
-        return message.reply(`Completed with ${delta} new words!`)
-        
-      case 'roll':
-        if (args[0] && diceRegex.test(args[0])) {
-          let diceToRoll = args[0].split(diceRegex).filter(e => e !== '')
-          if (diceToRoll[0] !== undefined) return message.reply(rollDice(diceToRoll[0], diceToRoll[1]).join(', '))
-          else return message.reply(rollDice(false, diceToRoll[1]))
-        } else if (args[0] && !diceRegex.test(args[0])) return message.reply(`Roll a specific die or dice by writing \`${prefix}roll d<dienumber>\` or \`${prefix}roll <numofdie>d<dienumber>\``)
-        else return message.reply(rollDice())
+        if (!defaults.hasOwnProperty(args[0]) || !parseInt(args[1])) return message.reply(errHelp)
+        defaults[args[0]] = parseInt(args[1])
+        await writeConfig(guildId, { prefix, defaults })
+        return message.reply(`default ${args[0]} set to ${args[1]} minutes! Will apply on next sprint`)
 
-      case 'insult':
-        return message.channel.send(randomInsult()) + (args[0] ? ', ' + args[0] : '')
+      case 'sprint':
+        if (sprints[guildId].isStarting) return message.reply(`there's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
+        sprints[guildId].isStarting = true
+        sprints[guildId].sprinters = []
+        message.channel.send('**Sprinting!**')
+        const time = (parseInt(args[0]) || defaults.time)
+        const bufferStart = (parseInt(args[1]) || defaults.bufferStart)
+        const bufferEnd = (parseInt(args[2]) || defaults.bufferEnd)
+        await message.channel.send(`In ${bufferStart} minutes, we're going to be sprinting for ${time} minutes.\r\nUse \`${prefix}join <wordcount>\` to join the sprint, leave out the wordcount to start from zero.`)
+        sprints[guildId].startingTimer = setTimeout(() => {
+          sprints[guildId].isStarting = false
+          const minutesAndSeconds = new Date()
+          const sprintEndMinute = (parseInt(minutesAndSeconds.getMinutes()) + time) % 60
+          message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minutes!\r\n~ It runs until ${sprintEndMinute}m and ${minutesAndSeconds.getSeconds()}s ~`)
+        }, ms(bufferStart))
+        sprints[guildId].runningTimer = setTimeout(() => {
+          sprints[guildId].isFinished = true
+          message.channel.send(`**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minutes!`)
+        }, ms(bufferStart) + ms(time))
+        sprints[guildId].resultsTimer = setTimeout(() => {
+          let results = [...sprints[guildId].sprinters]
+            .sort((a, b) => a.delta < b.delta ? -1 : a.delta > b.delta ? 1 : 0)
+            .map((author, index) => `${index + 1}. ${author} with ${author.delta} new words (${Math.round(author.delta / time, 2)} wpm)`)
+            .join('\r\n')
+          sprints[guildId].isFinished = false
+          message.channel.send(`The results are in:\r\n${results}`)
+        }, ms(bufferStart) + ms(time) + ms(bufferEnd))
+        return null
+
+      case 'join':
+        if (!sprints[guildId].isStarting) return message.reply(`there's no sprint currently started, start one using \`${prefix}sprint\``)
+        let wordcount = parseInt(args[0]) || 0
+        let i = sprints[guildId].sprinters.findIndex(s => s.author.username === author.username)
+        if (i > -1) {
+          sprints[guildId].sprinters[i].wordcount = wordcount
+          return message.reply(`updated join with ${wordcount} starting words`)
+        }
+        sprints[guildId].sprinters.push({ author, wordcount: wordcount, delta: 0, wpm: 0 })
+        return message.reply(`joined with ${wordcount} starting words`)
+
+      case 'cancel':
+        if (!sprints[guildId].isStarting) return message.reply(`there's no sprint currently started, start one using \`${prefix}sprint\``)
+        sprints[guildId].sprinters = []
+        sprints[guildId].isStarting = false
+        sprints[guildId].isFinished = false
+        clearTimeout(sprints[guildId].startingTimer)
+        clearTimeout(sprints[guildId].runningTimer)
+        clearTimeout(sprints[guildId].resultsTimer)
+        return message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
+
+      case 'wc':
+        if (!sprints[guildId].isFinished) return message.reply(`The sprint is still running! Try again later`)
+        if (!parseInt(args[0])) return message.reply(errHelp)
+        const wc = parseInt(args[0])
+        let index = sprints[guildId].sprinters.findIndex(s => s.author.username === author.username)
+        if (index == -1) return message.reply(`You need to join the sprint first! Use \`${prefix}join\``)
+        const delta = wc - sprints[guildId].sprinters[index].wordcount
+        sprints[guildId].sprinters[index].wordcount = wc
+        sprints[guildId].sprinters[index].delta = delta
+        return message.reply(`Completed with ${delta} new words!`)
+
+      case 'roll':
+        const diceRegex = /(\d+)?[d](\d+)/i
+        if (!args[0]) return message.reply(rollDice())
+        if (args[0] && !diceRegex.test(args[0])) return message.reply(errHelp)
+        let diceToRoll = args[0].split(diceRegex).filter(e => e !== '')
+        if (diceToRoll[0] !== undefined) return message.reply(rollDice(diceToRoll[0], diceToRoll[1]).join(', '))
+        return message.reply(rollDice(false, diceToRoll[1]))
 
       case 'help':
-        const embed = new MessageEmbed()
-        .setTitle(`Hi, I'm Sprinty!`)
-        .setDescription(`Here's some things you can have me do:
-\`\`\`
-${prefix}sprint
-${prefix}sprint <minutes>
-${prefix}sprint <minutes> <buffer>
-${prefix}setdefault Time|BufferStart|BufferEnd <minutes>
-${prefix}join
-${prefix}join <wordcount>
-${prefix}cancel
-${prefix}wc <count>
-${prefix}roll
-${prefix}roll d<dienumber>
-${prefix}roll <numofdie>d<dienumber>
-\`\`\``)
-        return message.reply(embed)
+        const defs = [
+          'sprint',
+          'sprint <minutes>',
+          'sprint <minutes> <buffer>',
+          'setdefault Time|BufferStart|BufferEnd <minutes>',
+          'join',
+          'join <wordcount>',
+          'cancel',
+          'wc <count>',
+          'roll',
+          'roll d<dienumber>',
+          'roll <numofdie>d<dienumber>'
+        ]
+        return message.reply(new MessageEmbed()
+          .setTitle(`Hi, I'm Sprinty!`)
+          .setDescription(`Here's some things you can have me do:\r\n\`\`\`${defs.map(d => `${prefix}${d}`).join(`\r\n`)}\`\`\``))
 
       default:
-        return message.reply(`Hmm, I don't know that command. Use \`${prefix}help\` for a list of available commands`)
+        return message.reply(`I don't know that command. Use \`${prefix}help\` for a list of available commands`)
     }
-  } catch(e) {
+  } catch (e) {
     console.warn('An error occured', e)
-    message.reply(`Uh oh! Something didn't work right :/\r\nTry again in a bit!`)
+    message.reply(`Uh oh! Something didn't work right; try again in a bit!`)
   }
 })
 
 client.login(token)
-
-// Functions
-async function sprint(message, time, bufferStart, bufferEnd) {
-  const { defaultTime, defaultBufferStart, defaultBufferEnd } = JSON.parse(await fs.readFile('./sprintConfig.json'))
-
-  if(!time) time = defaultTime
-  if(!bufferStart) bufferStart = defaultBufferStart
-  if(!bufferEnd) bufferEnd = defaultBufferEnd
-
-  let sprintingTime = time * 60 * 1000
-  let startingBufferTime = bufferStart * 60 * 1000
-  let endingBufferTime = bufferEnd * 60 * 1000
-
-  if (sprintIsStarting) {
-    await message.channel.send(`In ${startingBufferTime / 60 / 1000} minutes, we're going to be sprinting for ${time} minutes.\r\nUse \`${prefix}join <wordcount>\` to join the sprint, leave out the wordcount to start from zero.`)
-    // Starting sprint message
-    sprintObjectStarting = setTimeout(() => {
-      sprintIsStarting = false
-      minutesAndSeconds = new Date()
-      let sprintEndMinute = (parseInt(minutesAndSeconds.getMinutes()) + time) % 60
-      message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minutes!\r\n~ It runs until ${sprintEndMinute}m and ${minutesAndSeconds.getSeconds()}s ~`)
-    }, startingBufferTime)
-
-    // Finishing sprint message
-    sprintObjectRunning = setTimeout(() => {
-      sprintIsFinished = true
-      message.channel.send(`**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${endingBufferTime / 60 / 1000} minutes!`)
-    }, startingBufferTime + sprintingTime)
-
-    // Results of sprint message
-    sprintObjectResults = setTimeout(() => {
-      message.channel.send(`The results are in:\r\n${finishedList(time)}`)
-      sprintIsFinished = false
-    }, startingBufferTime + sprintingTime + endingBufferTime)
-  }
-}
-
-function addAndUpdateSprinters(message, wordcount) {
-  if (!wordcount) wordcount = 0
-  const author = message.author.username
-  if (sprinters.length != 0) {
-    if (sprinters.reduce((a, e) => e.name === author).length > 0) {
-      index = sprinters.findIndex((sprinter) => sprinter.name === author)
-      sprinters[index].wordcount = wordcount
-      return message.reply(`updated join with ${wordcount} starting words`)
-    }
-  } else {
-    sprinters.push({ name: author, wordcount: wordcount, delta: 0, wpm: 0 })
-    return message.reply(`joined with ${wordcount} starting words`)
-  }
-}
-
-function finishedList(time) {
-  sprinters.sort((a, b) => {
-    let wcA = a.delta
-    let wcB = b.delta
-    if (wcA < wcB) return -1
-    if (wcA > wcB) return 1
-    return 0
-  })
-  let result = sprinters.map((author, index) => {
-    return `${index + 1}. ${author.name} with ${author.delta} new words (${Math.round(author.delta / time, 2)} wpm)`
-  })
-  return result.join('\r\n')
-}
-
-function rollDice(quantity, type) {
-  if (quantity && type) {
-    let result = []
-    for (let i = 0; i < quantity; i++) {
-      result.push(random(type, 1))
-    }
-    return result.sort((a, b) => a - b)
-  } else if (type) {
-    return random(type, 1)
-  } else {
-    return random(6, 1)
-  }
-}
-
-function randomInsult() {
-  return insults[random(insults.length-1,0)]
-}
-
-function random(max, min = 0) {
-  return Math.round(Math.random() * (max - min) + min)
-}
