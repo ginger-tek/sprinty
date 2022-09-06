@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/jpmoormann/sprinty/main/Sprinty-logo.png" style="width:100px;display:block"/>
+
 # sprinty
 A *better* writers' sprint bot - Run writing sprints with your friends or writing group, and share your word counts.
 
