@@ -79,6 +79,11 @@ client.on('message', async (message) => {
         sprints[guildId].sprinters.push({ author, wordcount, delta: 0, wpm: 0 })
         return message.reply(`Joined with ${wordcount} starting words`)
 
+      case 'leave':
+        if (sprinterIndex == -1) return message.reply(`You need to join a sprint to leave it! Use \`${prefix}join\` ${!sprints[guildId].status ? ' next sprint' : ''}`)
+        sprints[guildId].sprinters.splice(sprinterIndex, 1)
+        return message.reply(`Left the sprint`)
+
       case 'cancel':
         if (!sprints[guildId].status) return message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
         sprints[guildId].sprinters = []
@@ -92,7 +97,7 @@ client.on('message', async (message) => {
         if (!sprints[guildId].status) return message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
         if (!parseInt(args[0])) return message.reply(errHelp)
         const wc = parseInt(args[0])
-        if (sprinterIndex == -1) return message.reply(`You need to join the sprint first! Use \`${prefix}join\` ${!sprints[guildId].status ? ' next time' : ''}`)
+        if (sprinterIndex == -1) return message.reply(`You need to join the sprint first! Use \`${prefix}join\` ${!sprints[guildId].status ? ' next sprint' : ''}`)
         const delta = wc - sprints[guildId].sprinters[sprinterIndex].wordcount
         sprints[guildId].sprinters[sprinterIndex].wordcount = wc
         sprints[guildId].sprinters[sprinterIndex].delta = delta
