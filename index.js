@@ -117,14 +117,14 @@ client.on('message', async (message) => {
           'sprint',
           'sprint <minutes>',
           'sprint <minutes> <buffer>',
-          'setdefault Time|BufferStart|BufferEnd <minutes>',
+          'setdefault time|bufferStart|bufferEnd <minutes>',
           'join',
           'join <wordcount>',
           'cancel',
           'wc <count>',
           'roll',
-          'roll d<dienumber>',
-          'roll <numofdie>d<dienumber>'
+          'roll d<sides>',
+          'roll <amount>d<sides>'
         ]
         return message.reply(new MessageEmbed()
           .setTitle(`Hi, I'm Sprinty!`)
