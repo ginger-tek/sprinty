@@ -1,12 +1,12 @@
 {
-  "name": "sprintato",
+  "name": "sprinty",
   "version": "0.0.1",
-  "description": "Custom sprint-bot",
+  "description": "writer's bot for Discord",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "nabaxo",
+  "author": "jpmoormann",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^12.3.1"
