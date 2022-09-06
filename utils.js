@@ -1,18 +1,20 @@
 const fs = require('fs').promises
 
+const defaultConfig = {
+  prefix: '_',
+  defaults: {
+    time: 15,
+    bufferStart: 1,
+    bufferEnd: 3
+  }
+}
+
 async function readConfig(guildId) {
   const path = `./guildConfigs/${guildId}.json`
   try {
     await fs.access(path)
   } catch (e) {
-    writeConfig(guildId, {
-      prefix: '_',
-      defaults: {
-        time: 15,
-        bufferStart: 1,
-        bufferEnd: 3
-      }
-    })
+    writeConfig(guildId, defaultConfig)
   }
   return JSON.parse(await fs.readFile(path))
 }
