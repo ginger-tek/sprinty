@@ -73,7 +73,7 @@ client.on('message', async (message) => {
         if(args.length == 1 && args[0].match(/\:(\d+)/)) {
           let diff = parseInt(args[0].slice(1)) - (new Date()).getMinutes()
           if(diff > 0) args[1] = diff
-          else return await message.reply(`Sorry, that interval has already passed; try again!`)
+          else args[1] = Math.abs(diff + 60)
           args[0] = null
         }
         const time = (parseInt(args[0]) || defaults.time)
@@ -87,8 +87,9 @@ client.on('message', async (message) => {
         }
         const run = async () => {
           state.status = 'finishing'
-          const msg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minutes!` }
-          await message.channel.send(msg)
+          const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minutes!` }
+          if(media.waiting) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
+          await message.channel.send(wmsg)
           clearTimeout(state.runningTimer)
         }
         const finish = async () => {
@@ -174,12 +175,14 @@ client.on('message', async (message) => {
           'roll',
           'roll d<sides>',
           'roll <amount>d<sides>',
-          'config defaults time|bufferStart|bufferEnd <minutes>',
-          'config media waiting|passed|failed <url>'
+          'setdefault time|bufferStart|bufferEnd <minutes>',
+          'setmedia waiting|passed|failed add <url>',
+          'setmedia waiting|passed|failed list',
+          'setmedia waiting|passed|failed remove <index>'
         ]
         return await message.reply(new MessageEmbed()
           .setTitle(`Hi, I'm Sprinty!`)
-          .setDescription(`Here's some things you can have me do:\r\n\`\`\`${defs.map(d => `${prefix}${d}`).join(`\r\n`)}\`\`\``))
+          .setDescription(`Here's all the commands I can run:\r\n\`\`\`${defs.map(d => `${prefix}${d}`).join(`\r\n`)}\`\`\``))
 
       default:
         return await message.reply(`Sorry, I don't know that command. Use \`${prefix}help\` for a list of available commands`)
