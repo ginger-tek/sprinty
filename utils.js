@@ -6,6 +6,11 @@ const defaultConfig = {
     time: 15,
     bufferStart: 1,
     bufferEnd: 3
+  },
+  media: {
+    waiting: [],
+    passed: [],
+    failed: []
   }
 }
 
@@ -21,7 +26,7 @@ async function readConfig(guildId) {
 
 async function writeConfig(guildId, data) {
   const path = `./guildConfigs/${guildId}.json`
-  await fs.writeFile(path, JSON.stringify(data, null, 4))
+  await fs.writeFile(path, JSON.stringify(data, null, 2))
   return true
 }
 
