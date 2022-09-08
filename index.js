@@ -45,7 +45,7 @@ client.on('message', async (message) => {
       case 'setdefault':
         if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
         if (!defaults.hasOwnProperty(args[0]) || !args[1]) return await message.reply(errHelp)
-        defaults[args[1]] = parseInt(args[1])
+        defaults[args[0]] = parseInt(args[1])
         await message.reply(`Default ${args[0]} set to ${args[1]} minutes! Will apply on next sprint`)
         return await writeConfig(guildId, { prefix, defaults, media })
 
