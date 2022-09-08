@@ -124,7 +124,7 @@ client.on('message', async (message) => {
         clearTimeout(state.startingTimer)
         clearTimeout(state.runningTimer)
         clearTimeout(state.finishingTimer)
-        return await message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
+        return await message.channel.send(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
 
       case 'join':
         if (!state.status) return await message.reply(`There's no sprint currently started, start a one using \`${prefix}sprint\``)
