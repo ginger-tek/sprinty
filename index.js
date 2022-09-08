@@ -99,15 +99,15 @@ client.on('message', async (message) => {
             .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / time, 2)} wpm)`)
             .join('\r\n')
           await message.channel.send(`**The results are in!**\r\n${results}`)
-          const passed = state.sprinters.filter(s => s.delta > 0).map(s => `${s.author}`).join(' ')
+          const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
           if (passed.length > 0) {
-            const pmsg = { content: `Great job, ${passed}` }
+            const pmsg = { content: `Great job! I'm so proud of you, ${passed}` }
             if(media.passed) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
             await message.channel.send(pmsg)
           }
-          const failed = state.sprinters.filter(s => s.delta < 0).map(s => `${s.author}`).join(' ')
+          const failed = state.sprinters.filter(s => s.delta < 50).map(s => `${s.author}`).join(' ')
           if (failed.length > 0) {
-            const fmsg = { content: `Do better, ${failed}` }
+            const fmsg = { content: `I thought you wanted to write, ${failed}` }
             if(media.failed) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
             await message.channel.send(fmsg)
           }
