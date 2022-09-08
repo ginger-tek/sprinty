@@ -67,16 +67,6 @@ client.on('message', async (message) => {
           await writeConfig(guildId, { prefix, defaults, media })
         }
         return null
-
-      case 'cancel':
-        if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
-        if (!state.status) return await message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
-        state.sprinters = []
-        state.isRunning = false
-        clearTimeout(state.startingTimer)
-        clearTimeout(state.runningTimer)
-        clearTimeout(state.finishingTimer)
-        return await message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
   
       case 'sprint':
         if (state.isStarting && state.isFinished) return await message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
@@ -128,6 +118,15 @@ client.on('message', async (message) => {
         state.runningTimer = setTimeout(run, ms(bufferStart) + ms(time))
         state.finishingTimer = setTimeout(finish, ms(bufferStart) + ms(time) + ms(bufferEnd))
         return null
+
+      case 'cancel':
+        if (!state.status) return await message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
+        state.sprinters = []
+        state.isRunning = false
+        clearTimeout(state.startingTimer)
+        clearTimeout(state.runningTimer)
+        clearTimeout(state.finishingTimer)
+        return await message.reply(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
 
       case 'join':
         if (!state.status) return await message.reply(`There's no sprint currently started, start a one using \`${prefix}sprint\``)
