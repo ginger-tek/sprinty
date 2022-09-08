@@ -4,7 +4,6 @@ const { token } = require('./config.json')
 
 const client = new Client()
 const sprints = {}
-const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
 client.once('ready', () => {
   console.clear()
@@ -17,6 +16,7 @@ client.on('message', async (message) => {
   const guildId = guild.id
   const { prefix, defaults, media } = await readConfig(guildId)
   const isAdmin = message.member.hasPermission('ADMINISTRATOR')
+  const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
   if (!content.startsWith(prefix) || author.bot) return
 
