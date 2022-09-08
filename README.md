@@ -33,23 +33,23 @@ There are also three media collections to store image URI's that are randomly pi
 ## Commands
 |Command|Description|
 |---|---|
-|`sprint`|Start a sprint using the default settings|
-|`sprint <time>`|Start a sprint with a specified length of time|
-|`sprint <time> <bufferStart>`|Start a sprint with a specified length of time, and start buffer|
-|`sprint <time> <bufferStart> <bufferEnd>`|Start a sprint with a specified length of time, start buffer, and end buffer|
-|`sprint :<interval>`|Start a sprint with default settings at the next time interval, i.e. `:45` would start at the next 45 minute on the clock. If the value is in the past, the default startBuffer is used as a fallback|
-|`join`|Join the current sprint with 0 startings words|
-|`join <wordcount>`|Join the current sprint with a specified number of starting words. Use any time during a sprint to update your word count|
-|`wc <count>`|Submit your final word count |
-|`roll`|Rolls a D6 dice|
-|`roll d<sides>`|Rolls an n-sided dice|
-|`roll <amount>d<sides>`|Rolls a specified number of n-sided die|
+|`_sprint`|Start a sprint using the default settings|
+|`_sprint <time>`|Start a sprint with a specified length of time|
+|`_sprint <time> <bufferStart>`|Start a sprint with a specified length of time, and start buffer|
+|`_sprint <time> <bufferStart> <bufferEnd>`|Start a sprint with a specified length of time, start buffer, and end buffer|
+|`_sprint :<interval>`|Start a sprint with default settings at the next time interval, i.e. `:45` would start at the next 45 minute on the clock. If the value is in the past, the default startBuffer is used as a fallback|
+|`_join`|Join the current sprint with 0 startings words|
+|`_join <wordcount>`|Join the current sprint with a specified number of starting words. Use any time during a sprint to update your word count|
+|`_wc <count>`|Submit your final word count |
+|`_roll`|Rolls a D6 dice|
+|`_roll d<sides>`|Rolls an n-sided dice|
+|`_roll <amount>d<sides>`|Rolls a specified number of n-sided die|
 
 ## Admin Commands
 |Command|Description|
 |---|---|
-|`cancel`|Cancel the current sprint|
-|`setdefault time\|bufferStart\|bufferEnd <minutes>`|Set a new value for one of the default timing properties|
-|`setmedia waiting\|passed\|failed add <uri>`|Add a new image URI to one of the media collections|
-|`setmedia waiting\|passed\|failed list`|List the image URI's for a given media collection|
-|`setmedia waiting\|passed\|failed remove <index>`|Remove an existing image URI from a given media collection by its index|
+|`_cancel`|Cancel the current sprint|
+|`_setdefault time\|bufferStart\|bufferEnd <minutes>`|Set a new value for one of the default timing properties|
+|`_setmedia waiting\|passed\|failed add <uri>`|Add a new image URI to one of the media collections|
+|`_setmedia waiting\|passed\|failed list`|List the image URI's for a given media collection|
+|`_setmedia waiting\|passed\|failed remove <index>`|Remove an existing image URI from a given media collection by its index|
