@@ -4,6 +4,7 @@ const { token } = require('./config.json')
 
 const client = new Client()
 const sprints = {}
+const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
 client.once('ready', () => {
   console.clear()
@@ -26,13 +27,10 @@ client.on('message', async (message) => {
     runningTimer: null,
     finishingTimer: null
   }
+
   const state = sprints[guildId]
-
-  console.log(`${guildId}: ${author.username} => ${content}`)
-
   const args = content.slice(prefix.length).trim().split(/ +/)
   const command = args.shift().toLowerCase()
-  const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
   try {
     const sprinterIndex = sprints[guildId].sprinters.findIndex(s => s.author.username === author.username)
