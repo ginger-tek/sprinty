@@ -88,7 +88,7 @@ client.on('message', async (message) => {
         const run = async () => {
           state.status = 'finishing'
           const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minutes!` }
-          if(media.waiting) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
+          if(media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
           await message.channel.send(wmsg)
           clearTimeout(state.runningTimer)
         }
@@ -102,13 +102,13 @@ client.on('message', async (message) => {
           const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
           if (passed.length > 0) {
             const pmsg = { content: `Great job! I'm so proud of you, ${passed}` }
-            if(media.passed) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
+            if(media.passed.length > 0) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
             await message.channel.send(pmsg)
           }
           const failed = state.sprinters.filter(s => s.delta < 50).map(s => `${s.author}`).join(' ')
           if (failed.length > 0) {
             const fmsg = { content: `I thought you wanted to write, ${failed}` }
-            if(media.failed) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
+            if(media.failed.length > 0) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
             await message.channel.send(fmsg)
           }
           clearTimeout(state.finishingTimer)
