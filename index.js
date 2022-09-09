@@ -52,14 +52,16 @@ client.on('message', async (message) => {
       case 'setmedia':
         if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
         if (!media.hasOwnProperty(args[0]) || !args[1]) return await message.reply(errHelp)
-        if(args[1] == 'add') {
+        if (args[1] == 'add') {
+          if (media[args[0]].findIndex(m => m == args[2]) > -1) return await message.reply(`That image URI is already added`)
           media[args[0]].push(args[2])
           await message.reply(`Added image to ${args[0]} collection!`)
           await writeConfig(guildId, { prefix, defaults, media })
-        } else if(args[1] == 'list') {
+        } else if (args[1] == 'list') {
           const list = `\r\n` + media[args[0]].map((u,x)=>`[${x+1}] ${u}`).join(`\r\n`)
           await message.reply(list)
-        } else if(args[1] == 'remove') {
+        } else if (args[1] == 'remove') {
+          if (!media[args[0][args[2]-1]]) return await message.reply(`Sorry, that index doesn't exist`)
           media[args[0]].splice(args[2]-1,1)
           await message.reply(`Removed image at index ${args[2]}`)
           await writeConfig(guildId, { prefix, defaults, media })
@@ -70,9 +72,9 @@ client.on('message', async (message) => {
         if (state.isStarting && state.isFinished) return await message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
         state.status = 'starting'
         state.sprinters = []
-        if(args.length == 1 && args[0].match(/\:(\d+)/)) {
+        if (args.length == 1 && args[0].match(/\:(\d+)/)) {
           let diff = parseInt(args[0].slice(1)) - (new Date()).getMinutes()
-          if(diff > 0) args[1] = diff
+          if (diff > 0) args[1] = diff
           else args[1] = Math.abs(diff + 60)
           args[0] = null
         }
