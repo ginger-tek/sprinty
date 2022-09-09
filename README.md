@@ -44,6 +44,7 @@ There are also three media collections to store image URI's that are randomly pi
 |`_roll`|Rolls a D6 dice|
 |`_roll d<sides>`|Rolls an n-sided dice|
 |`_roll <amount>d<sides>`|Rolls a specified number of n-sided die|
+|`_help`|Displays a list of available commands and their parameters|
 
 ## Admin Commands
 |Command|Description|
