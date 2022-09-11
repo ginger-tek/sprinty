@@ -182,6 +182,7 @@ client.on('message', async (message) => {
           'sprint <time> <bufferStart>',
           'sprint <time> <bufferStart> <bufferEnd>',
           'sprint :<interval>',
+          'sprint <time> :<interval>',
           'join',
           'join <wordcount>',
           'time',
