@@ -38,7 +38,7 @@ There are also three media collections to store image URI's that are randomly pi
 |`_sprint <time> <bufferStart>`|Start a sprint with a specified length of time, and start buffer. Example: `_sprint 2 20` will start a 20min sprint in 2min|
 |`_sprint <time> <bufferStart> <bufferEnd>`|Start a sprint with a specified length of time, start buffer, and end buffer. Example: `_sprint 5 15 3` will start a 15min sprint in 5min, and have a 3min ending buffer|
 |`_sprint :<interval>`|Start a sprint with default settings at the next time interval, i.e. `:45` would start at the next 45 minute on the clock. If the interval is in the past, the next hour will be used plus the minute interval|
-|`_sprint <time> :<interval>`|Start a sprint with a specified start buffer at the next time interval, i.e. `20 :45` would start a 20min sprint at the next 45 minute on the clock. If the interval is in the past, the next hour will be used plus the minute interval|
+|`_sprint <time> :<interval>`|Start a sprint with a specified time at the next time interval, i.e. `20 :45` would start a 20min sprint at the next 45 minute on the clock. If the interval is in the past, the next hour will be used plus the minute interval|
 |`_time`|Get the remaining time of the current sprint|
 |`_cancel`|Cancel the current sprint|
 |`_join`|Join the current sprint with 0 startings words|
