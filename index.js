@@ -39,14 +39,14 @@ client.on('message', async (message) => {
   const start = async (time) => {
     state.status = 'running'
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
-    await message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minute(s), ${sprinters}`)
+    await message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minute(s) ${sprinters}`)
     clearTimeout(state.startingTimer)
   }
 
   const run = async (bufferEnd) => {
     state.status = 'finishing'
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
-    const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minutes! ${sprinters}` }
+    const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minute(s) ${sprinters}` }
     if(media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
     await message.channel.send(wmsg)
     clearTimeout(state.runningTimer)
