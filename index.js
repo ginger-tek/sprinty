@@ -104,7 +104,7 @@ client.on('message', async (message) => {
         }
         const finish = async () => {
           state.status = null
-          state.sprinters.sort((a, b) => a.delta < b.delta ? -1 : a.delta > b.delta ? 1 : 0)
+          state.sprinters.sort((a, b) => a.delta > b.delta ? -1 : a.delta < b.delta ? 1 : 0)
           const results = state.sprinters
             .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / time, 2)} wpm)`)
             .join('\r\n')
