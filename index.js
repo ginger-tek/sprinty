@@ -90,7 +90,8 @@ client.on('message', async (message) => {
         await message.channel.send(`**New Sprint!**\r\nIn ${bufferStart} minute(s), we're going to be sprinting for ${time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
         const start = async () => {
           state.status = 'running'
-          await message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minute(s)`)
+          const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
+          await message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minute(s), ${sprinters}`)
           clearTimeout(state.startingTimer)
         }
         const run = async () => {
