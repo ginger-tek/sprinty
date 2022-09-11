@@ -23,6 +23,7 @@ client.on('message', async (message) => {
   if (!sprints[guildId]) sprints[guildId] = {
     sprinters: [],
     status: null,
+    startTime: null,
     startingTimer: null,
     runningTimer: null,
     finishingTimer: null
@@ -69,7 +70,7 @@ client.on('message', async (message) => {
         return null
   
       case 'sprint':
-        if (state.isStarting && state.isFinished) return await message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
+        if (state.status) return await message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
         state.status = 'starting'
         state.sprinters = []
         if (args.length == 1 && args[0].match(/\:(\d+)/)) {
@@ -81,6 +82,7 @@ client.on('message', async (message) => {
         const time = (parseInt(args[0]) || defaults.time)
         const bufferStart = (parseInt(args[1]) || defaults.bufferStart)
         const bufferEnd = (parseInt(args[2]) || defaults.bufferEnd)
+        state.startTime = new Date(new Date().getTime() + ms(time))
         await message.channel.send(`**New Sprint!**\r\nIn ${bufferStart} minute(s), we're going to be sprinting for ${time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
         const start = async () => {
           state.status = 'running'
@@ -163,6 +165,10 @@ client.on('message', async (message) => {
         let diceToRoll = args[0].split(diceRegex).filter(e => e !== '')
         if (diceToRoll[0] !== undefined) return await message.reply(rollDice(diceToRoll[0], diceToRoll[1]).join(', '))
         return await message.reply(rollDice(false, diceToRoll[1]))
+
+      case 'time':
+        const mins = Math.floor((state.startTime - new Date()) / 1000 / 60)
+        return await message.reply(`${mins} minutes left in the sprint!`)
 
       case 'help':
         const defs = [
