@@ -130,7 +130,7 @@ client.on('message', async (message) => {
       case 'cancel':
         if (!state.status) return await message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
         state.sprinters = []
-        state.isRunning = false
+        state.status = null
         clearTimeout(state.startingTimer)
         clearTimeout(state.runningTimer)
         clearTimeout(state.finishingTimer)
