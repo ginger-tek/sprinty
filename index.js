@@ -179,6 +179,7 @@ client.on('message', async (message) => {
           'sprint :<interval>',
           'join',
           'join <wordcount>',
+          'time'
           'cancel',
           'wc <count>',
           'roll',
