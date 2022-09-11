@@ -78,6 +78,10 @@ client.on('message', async (message) => {
           if (diff > 0) args[1] = diff
           else args[1] = Math.abs(diff + 60)
           args[0] = null
+        } else if (args.length == 2 && args[1].match(/\:(\d+)/)) {
+          let diff = parseInt(args[1].slice(1)) - (new Date()).getMinutes()
+          if (diff > 0) args[1] = diff
+          else args[1] = Math.abs(diff + 60)
         }
         const time = (parseInt(args[0]) || defaults.time)
         const bufferStart = (parseInt(args[1]) || defaults.bufferStart)
