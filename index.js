@@ -166,7 +166,7 @@ client.on('message', async (message) => {
         const allSubmitted = state.sprinters.filter(s => !!s.wordcount).length == state.sprinters.length
         if(allSubmitted) {
           clearTimeout(state.finishingTimer)
-          finish()
+          await finish()
         }
         return null
 
