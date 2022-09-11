@@ -33,6 +33,28 @@ client.on('message', async (message) => {
   const args = content.slice(prefix.length).trim().split(/ +/)
   const command = args.shift().toLowerCase()
 
+  const finish = async () => {
+    state.status = null
+    state.sprinters.sort((a, b) => a.delta > b.delta ? -1 : a.delta < b.delta ? 1 : 0)
+    const results = state.sprinters
+      .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / time, 2)} wpm)`)
+      .join('\r\n')
+    await message.channel.send(`**The results are in!**\r\n${results}`)
+    const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
+    if (passed.length > 0) {
+      const pmsg = { content: `Great job! I'm so proud of you, ${passed}` }
+      if(media.passed.length > 0) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
+      await message.channel.send(pmsg)
+    }
+    const failed = state.sprinters.filter(s => s.delta < 50).map(s => `${s.author}`).join(' ')
+    if (failed.length > 0) {
+      const fmsg = { content: `I thought you wanted to write, ${failed}` }
+      if(media.failed.length > 0) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
+      await message.channel.send(fmsg)
+    }
+    clearTimeout(state.finishingTimer)
+  }
+
   try {
     const sprinterIndex = sprints[guildId].sprinters.findIndex(s => s.author.username === author.username)
     switch (command) {
@@ -101,28 +123,7 @@ client.on('message', async (message) => {
           if(media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
           await message.channel.send(wmsg)
           clearTimeout(state.runningTimer)
-        }
-        const finish = async () => {
-          state.status = null
-          state.sprinters.sort((a, b) => a.delta > b.delta ? -1 : a.delta < b.delta ? 1 : 0)
-          const results = state.sprinters
-            .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / time, 2)} wpm)`)
-            .join('\r\n')
-          await message.channel.send(`**The results are in!**\r\n${results}`)
-          const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
-          if (passed.length > 0) {
-            const pmsg = { content: `Great job! I'm so proud of you, ${passed}` }
-            if(media.passed.length > 0) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
-            await message.channel.send(pmsg)
-          }
-          const failed = state.sprinters.filter(s => s.delta < 50).map(s => `${s.author}`).join(' ')
-          if (failed.length > 0) {
-            const fmsg = { content: `I thought you wanted to write, ${failed}` }
-            if(media.failed.length > 0) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
-            await message.channel.send(fmsg)
-          }
-          clearTimeout(state.finishingTimer)
-        }
+        }        
         state.startingTimer = setTimeout(start, ms(bufferStart))
         state.runningTimer = setTimeout(run, ms(bufferStart) + ms(time))
         state.finishingTimer = setTimeout(finish, ms(bufferStart) + ms(time) + ms(bufferEnd))
@@ -161,7 +162,13 @@ client.on('message', async (message) => {
         const delta = wc - state.sprinters[sprinterIndex].wordcount
         state.sprinters[sprinterIndex].wordcount = wc
         state.sprinters[sprinterIndex].delta = delta
-        return await message.reply(`Completed with ${delta} new words!`)
+        await message.reply(`Completed with ${delta} new words!`)
+        const allSubmitted = state.sprinters.filter(s => !!s.wordcount).length == state.sprinters.length
+        if(allSubmitted) {
+          clearTimeout(state.finishingTimer)
+          finish()
+        }
+        return null
 
       case 'roll':
         const diceRegex = /(\d+)?[d](\d+)/i
