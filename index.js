@@ -167,6 +167,7 @@ client.on('message', async (message) => {
         return await message.reply(rollDice(false, diceToRoll[1]))
 
       case 'time':
+        if (!state.status && !state.startTime) return await message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
         const mins = Math.floor((state.startTime - new Date()) / 1000 / 60)
         return await message.reply(`${mins} minutes left in the sprint!`)
 
