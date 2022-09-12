@@ -36,27 +36,27 @@ client.on('message', async (message) => {
   const args = content.slice(prefix.length).trim().split(/ +/)
   const command = args.shift().toLowerCase()
 
-  const start = async (time) => {
+  const start = async () => {
     state.status = 'running'
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
-    await message.channel.send(`**Starting the sprint!**\r\nYou have ${time} minute(s) ${sprinters}`)
+    await message.channel.send(`**Starting the sprint!**\r\nYou have ${state.time} minute(s) ${sprinters}`)
     clearTimeout(state.startingTimer)
   }
 
-  const run = async (bufferEnd) => {
+  const run = async () => {
     state.status = 'finishing'
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
-    const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${bufferEnd} minute(s) ${sprinters}` }
+    const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${state.bufferEnd} minute(s) ${sprinters}` }
     if(media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
     await message.channel.send(wmsg)
     clearTimeout(state.runningTimer)
   }
 
-  const finish = async (time) => {
+  const finish = async () => {
     state.status = null
     state.sprinters.sort((a, b) => a.delta > b.delta ? -1 : a.delta < b.delta ? 1 : 0)
     const results = state.sprinters
-      .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / time, 2)} wpm)`)
+      .map((s, x) => `${x + 1}. ${s.author.username} with ${s.delta} new words (${Math.round(s.delta / state.time, 2)} wpm)`)
       .join('\r\n')
     await message.channel.send(`**The results are in!**\r\n${results}`)
     const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
@@ -130,9 +130,9 @@ client.on('message', async (message) => {
         state.startTime = new Date(new Date().getTime() + ms(state.time))
         await message.channel.send(`**New Sprint!**\r\nIn ${state.bufferStart} minute(s), we're going to be sprinting for ${state.time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
         
-        state.startingTimer = setTimeout(async () => await start(state.time), ms(state.bufferStart))
-        state.runningTimer = setTimeout(async () => await run(state.bufferEnd), ms(state.bufferStart) + ms(state.time))
-        state.finishingTimer = setTimeout(async () => await finish(state.time), ms(state.bufferStart) + ms(state.time) + ms(state.bufferEnd))
+        state.startingTimer = setTimeout(start, ms(state.bufferStart))
+        state.runningTimer = setTimeout(run, ms(state.bufferStart) + ms(state.time))
+        state.finishingTimer = setTimeout(finish, ms(state.bufferStart) + ms(state.time) + ms(state.bufferEnd))
         return null
 
       case 'cancel':
@@ -169,7 +169,7 @@ client.on('message', async (message) => {
         state.sprinters[sprinterIndex].wordcount = wc
         state.sprinters[sprinterIndex].delta = delta
         await message.reply(`Completed with ${delta} new words!`)
-        const allSubmitted = state.sprinters.filter(s => !!s.wordcount).length == state.sprinters.length
+        const allSubmitted = state.sprinters.filter(s => s.delta != 0).length == state.sprinters.length
         if(allSubmitted) {
           clearTimeout(state.finishingTimer)
           await finish(state.time)
