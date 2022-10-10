@@ -43,6 +43,7 @@ There are also three media collections to store image URI's that are randomly pi
 |`_cancel`|Cancel the current sprint|
 |`_join`|Join the current sprint with 0 startings words|
 |`_join <wordcount>`|Join the current sprint with a specified number of starting words. Use any time during a sprint to update your word count|
+|`_leave`|Leave the current sprint|
 |`_wc <count>`|Submit your final word count |
 |`_roll`|Rolls a D6 dice|
 |`_roll d<sides>`|Rolls an n-sided dice|
