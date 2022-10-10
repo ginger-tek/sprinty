@@ -38,6 +38,7 @@ client.on('message', async (message) => {
 
   const start = async () => {
     state.status = 'running'
+    state.startTime = new Date(new Date().getTime() + ms(state.time))
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
     await message.channel.send(`**Starting the sprint!**\r\nYou have ${state.time} minute(s) ${sprinters}`)
     clearTimeout(state.startingTimer)
@@ -111,7 +112,7 @@ client.on('message', async (message) => {
         return null
   
       case 'sprint':
-        if (state.status) return await message.reply(`There's already a sprint running! Join in using \`${prefix}join <wordcount>\``)
+        if (state.status) return await message.reply(`There's already a sprint ${state.status}! Join in using \`${prefix}join <wordcount>\``)
         state.status = 'starting'
         state.sprinters = []
         if (args.length == 1 && args[0].match(/\:(\d+)/)) {
@@ -127,7 +128,6 @@ client.on('message', async (message) => {
         state.time = (parseInt(args[0]) || defaults.time)
         state.bufferStart = (parseInt(args[1]) || defaults.bufferStart)
         state.bufferEnd = (parseInt(args[2]) || defaults.bufferEnd)
-        state.startTime = new Date(new Date().getTime() + ms(state.time))
         await message.channel.send(`**New Sprint!**\r\nIn ${state.bufferStart} minute(s), we're going to be sprinting for ${state.time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
         
         state.startingTimer = setTimeout(start, ms(state.bufferStart))
@@ -139,6 +139,8 @@ client.on('message', async (message) => {
         if (!state.status) return await message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
         state.sprinters = []
         state.status = null
+        state.startTime = null
+
         clearTimeout(state.startingTimer)
         clearTimeout(state.runningTimer)
         clearTimeout(state.finishingTimer)
@@ -147,7 +149,7 @@ client.on('message', async (message) => {
       case 'join':
         if (!state.status) return await message.reply(`There's no sprint currently started, start a one using \`${prefix}sprint\``)
         if (state.status == 'finishing') return await message.reply(`The sprint has already finished, start one using \`${prefix}sprint\``)
-        const wordcount = parseInt(args[0]) || 0
+        const wordcount = Math.abs(parseInt(args[0])) || 0
         if (sprinterIndex > -1) {
           state.sprinters[sprinterIndex].wordcount = wordcount
           return await message.reply(`Updated join with ${wordcount} starting words`)
@@ -162,6 +164,8 @@ client.on('message', async (message) => {
 
       case 'wc':
         if (!state.status) return await message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
+        if (state.status == 'starting') return await message.reply(`The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`)
+        if (state.status == 'running') return await message.reply(`The current sprint hasn't finished yet! Use \`${prefix}join\` to join the sprint`)
         if (!parseInt(args[0])) return await message.reply(errHelp)
         const wc = parseInt(args[0])
         if (sprinterIndex == -1) return await message.reply(`You need to join the sprint first! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`)
@@ -172,7 +176,7 @@ client.on('message', async (message) => {
         const allSubmitted = state.sprinters.filter(s => s.delta != 0).length == state.sprinters.length
         if(allSubmitted) {
           clearTimeout(state.finishingTimer)
-          await finish(state.time)
+          await finish()
         }
         return null
 
@@ -186,6 +190,7 @@ client.on('message', async (message) => {
 
       case 'time':
         if (!state.status && !state.startTime) return await message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
+        if (state.status == 'starting') return await message.reply(`The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`)
         const mins = Math.floor((state.startTime - new Date()) / 1000 / 60)
         return await message.reply(`${mins} minutes left in the sprint!`)
 
