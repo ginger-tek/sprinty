@@ -41,16 +41,14 @@ client.on('message', async (message) => {
     state.startTime = new Date(new Date().getTime() + ms(state.time))
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
     await message.channel.send(`**Starting the sprint!**\r\nYou have ${state.time} minute(s) ${sprinters}`)
-    clearTimeout(state.startingTimer)
   }
 
   const run = async () => {
     state.status = 'finishing'
     const sprinters = state.sprinters.map(s => `${s.author}`).join(' ')
     const wmsg = { content: `**Finished the sprint!**\r\nGive your final word count with \`${prefix}wc <wordcount>\`.\r\nYou have ${state.bufferEnd} minute(s) ${sprinters}` }
-    if(media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
+    if (media.waiting.length > 0) wmsg.files = [media.waiting[random(media.waiting.length - 1, 0)]]
     await message.channel.send(wmsg)
-    clearTimeout(state.runningTimer)
   }
 
   const finish = async () => {
@@ -63,15 +61,24 @@ client.on('message', async (message) => {
     const passed = state.sprinters.filter(s => s.delta > 50).map(s => `${s.author}`).join(' ')
     if (passed.length > 0) {
       const pmsg = { content: `Great job! I'm so proud of you, ${passed}` }
-      if(media.passed.length > 0) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
+      if (media.passed.length > 0) pmsg.files = [media.passed[random(media.passed.length - 1, 0)]]
       await message.channel.send(pmsg)
     }
     const failed = state.sprinters.filter(s => s.delta < 50).map(s => `${s.author}`).join(' ')
     if (failed.length > 0) {
       const fmsg = { content: `I thought you wanted to write, ${failed}` }
-      if(media.failed.length > 0) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
+      if (media.failed.length > 0) fmsg.files = [media.failed[random(media.failed.length - 1, 0)]]
       await message.channel.send(fmsg)
     }
+    clearState()
+  }
+
+  const clearState = () => {
+    state.sprinters = []
+    state.status = null
+    state.startTime = null
+    clearTimeout(state.startingTimer)
+    clearTimeout(state.runningTimer)
     clearTimeout(state.finishingTimer)
   }
 
@@ -98,21 +105,21 @@ client.on('message', async (message) => {
         if (args[1] == 'add') {
           if (media[args[0]].findIndex(m => m == args[2]) > -1) return await message.reply({ content: `That image URI is already added`, ephemeral: true })
           media[args[0]].push(args[2])
-          await message.reply({ content, `Added image to ${args[0]} collection!`, ephemeral: true })
+          await message.reply({ content: `Added image to ${args[0]} collection!`, ephemeral: true })
           await writeConfig(guildId, { prefix, defaults, media })
         } else if (args[1] == 'list') {
-          const list = `\r\n` + media[args[0]].map((u,x)=>`[${x+1}] ${u}`).join(`\r\n`)
+          const list = `\r\n` + media[args[0]].map((u, x) => `[${x + 1}] ${u}`).join(`\r\n`)
           await message.reply({ content: list, ephemeral: true })
         } else if (args[1] == 'remove') {
-          if (!media[args[0][args[2]-1]]) return await message.reply({ content: `Sorry, that index doesn't exist`, ephemeral: true })
-          media[args[0]].splice(args[2]-1,1)
+          if (!media[args[0][args[2] - 1]]) return await message.reply({ content: `Sorry, that index doesn't exist`, ephemeral: true })
+          media[args[0]].splice(args[2] - 1, 1)
           await message.reply({ content: `Removed image at index ${args[2]}`, ephemeral: true })
           await writeConfig(guildId, { prefix, defaults, media })
         }
         return null
-  
+
       case 'sprint':
-        if (state.status) return await message.reply({ content, `There's already a sprint ${state.status}! Join in using \`${prefix}join <wordcount>\``, ephemeral: true })
+        if (state.status) return await message.reply({ content: `There's already a sprint ${state.status}! Join in using \`${prefix}join <wordcount>\``, ephemeral: true })
         state.status = 'starting'
         state.sprinters = []
         if (args.length == 1 && args[0].match(/\:(\d+)/)) {
@@ -129,7 +136,7 @@ client.on('message', async (message) => {
         state.bufferStart = (parseInt(args[1]) || defaults.bufferStart)
         state.bufferEnd = (parseInt(args[2]) || defaults.bufferEnd)
         await message.channel.send(`**New Sprint!**\r\nIn ${state.bufferStart} minute(s), we're going to be sprinting for ${state.time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
-        
+
         state.startingTimer = setTimeout(start, ms(state.bufferStart))
         state.runningTimer = setTimeout(run, ms(state.bufferStart) + ms(state.time))
         state.finishingTimer = setTimeout(finish, ms(state.bufferStart) + ms(state.time) + ms(state.bufferEnd))
@@ -137,12 +144,7 @@ client.on('message', async (message) => {
 
       case 'cancel':
         if (!state.status) return await message.reply({ content: `There's no sprint currently started, start one using \`${prefix}sprint\``, ephemeral: true })
-        state.sprinters = []
-        state.status = null
-        state.startTime = null
-        clearTimeout(state.startingTimer)
-        clearTimeout(state.runningTimer)
-        clearTimeout(state.finishingTimer)
+        clearState()
         return await message.channel.send(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
 
       case 'join':
@@ -159,6 +161,10 @@ client.on('message', async (message) => {
       case 'leave':
         if (sprinterIndex == -1) return await message.reply({ content: `You need to join a sprint to leave it! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`, ephemeral: true })
         state.sprinters.splice(sprinterIndex, 1)
+        if (state.sprinters.length == 0) {
+          clearState()
+          return await channel.send(`Everyone left the current sprint! Canceling the sprint`)
+        }
         return await message.reply(`Left the sprint`)
 
       case 'wc':
@@ -173,10 +179,7 @@ client.on('message', async (message) => {
         state.sprinters[sprinterIndex].delta = delta
         await message.reply(`Completed with ${delta} new words!`)
         const allSubmitted = state.sprinters.filter(s => s.delta != 0).length == state.sprinters.length
-        if(allSubmitted) {
-          clearTimeout(state.finishingTimer)
-          await finish()
-        }
+        if (allSubmitted) await finish()
         return null
 
       case 'roll':
