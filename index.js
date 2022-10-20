@@ -5,6 +5,20 @@ const { token } = require('./config.json')
 const client = new Client()
 const sprints = {}
 
+function State() {
+  return {
+    sprinters: [],
+    status: null,
+    time: null,
+    bufferStart: null,
+    bufferEnd: null,
+    startTime: null,
+    startingTimer: null,
+    runningTimer: null,
+    finishingTimer: null
+  }
+}
+
 client.once('ready', () => {
   console.clear()
   console.log(`Logged in as ${client.user.tag}`)
@@ -19,22 +33,18 @@ client.on('message', async (message) => {
   const errHelp = `Hmm, not quite right. Use \`${prefix}help\` to try again`
 
   if (!content.startsWith(prefix) || author.bot) return
-
-  if (!sprints[guildId]) sprints[guildId] = {
-    sprinters: [],
-    status: null,
-    time: null,
-    bufferStart: null,
-    bufferEnd: null,
-    startTime: null,
-    startingTimer: null,
-    runningTimer: null,
-    finishingTimer: null
-  }
+  if (!sprints[guildId]) sprints[guildId] = new State()
 
   const state = sprints[guildId]
   const args = content.slice(prefix.length).trim().split(/ +/)
   const command = args.shift().toLowerCase()
+  
+  const clearState = () => {
+    clearTimeout(state.startingTimer)
+    clearTimeout(state.runningTimer)
+    clearTimeout(state.finishingTimer)
+    state[guildId] = new State()
+  }
 
   const start = async () => {
     state.status = 'running'
@@ -73,83 +83,79 @@ client.on('message', async (message) => {
     clearState()
   }
 
-  const clearState = () => {
-    state.sprinters = []
-    state.status = null
-    state.startTime = null
-    clearTimeout(state.startingTimer)
-    clearTimeout(state.runningTimer)
-    clearTimeout(state.finishingTimer)
-  }
-
   try {
     const sprinterIndex = sprints[guildId].sprinters.findIndex(s => s.author.username === author.username)
     switch (command) {
       case '!clear':
-        if (!isAdmin) return await message.reply({ content: `Sorry, only admins can run this command`, ephemeral: true })
+        if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
         await message.delete()
-        const fetched = await message.channel.messages.fetch({ limit: 99, cache: false })
-        await message.channel.bulkDelete(fetched)
+        const limit = parseInt(args[0]) || 99
+        let fetched = await message.channel.messages.fetch({ limit, cache: false })
+        const old = Date.now() - (14 * 60 * 60 * 24)
+        for (let m of fetched.keys()) {
+          if (fetched.get(m).createdTimestamp < old) fetched.delete(m)
+        }
+        if (fetched.size > 0) await message.channel.bulkDelete(fetched)
         return null
 
       case 'setdefault':
-        if (!isAdmin) return await message.reply({ content: `Sorry, only admins can run this command`, ephemeral: true })
-        if (!defaults.hasOwnProperty(args[0]) || !args[1]) return await message.reply({ content: errHelp, ephemeral: true })
+        if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
+        if (!defaults.hasOwnProperty(args[0]) || !args[1]) return await message.reply(errHelp)
         defaults[args[0]] = parseInt(args[1])
-        await message.reply({ content: `Default ${args[0]} set to ${args[1]} minutes! Will apply on next sprint`, ephemeral: true })
+        await message.reply(`Default ${args[0]} set to ${args[1]} minutes! Will apply on next sprint`)
         return await writeConfig(guildId, { prefix, defaults, media })
 
       case 'setmedia':
-        if (!isAdmin) return await message.reply({ content: `Sorry, only admins can run this command`, ephemeral: true })
-        if (!media.hasOwnProperty(args[0]) || !args[1]) return await message.reply({ content: errHelp, ephemeral: true })
+        if (!isAdmin) return await message.reply(`Sorry, only admins can run this command`)
+        if (!media.hasOwnProperty(args[0]) || !args[1]) return await message.reply(errHelp)
         if (args[1] == 'add') {
-          if (media[args[0]].findIndex(m => m == args[2]) > -1) return await message.reply({ content: `That image URI is already added`, ephemeral: true })
+          if (media[args[0]].findIndex(m => m == args[2]) > -1) return await message.reply(`That image URI is already added`)
           media[args[0]].push(args[2])
-          await message.reply({ content: `Added image to ${args[0]} collection!`, ephemeral: true })
+          await message.reply(`Added image to ${args[0]} collection!`)
           await writeConfig(guildId, { prefix, defaults, media })
         } else if (args[1] == 'list') {
           const list = `\r\n` + media[args[0]].map((u, x) => `[${x + 1}] ${u}`).join(`\r\n`)
-          await message.reply({ content: list, ephemeral: true })
+          await message.reply(list)
         } else if (args[1] == 'remove') {
-          if (!media[args[0][args[2] - 1]]) return await message.reply({ content: `Sorry, that index doesn't exist`, ephemeral: true })
+          if (!media[args[0][args[2] - 1]]) return await message.reply(`Sorry, that index doesn't exist`)
           media[args[0]].splice(args[2] - 1, 1)
-          await message.reply({ content: `Removed image at index ${args[2]}`, ephemeral: true })
+          await message.reply(`Removed image at index ${args[2]}`)
           await writeConfig(guildId, { prefix, defaults, media })
         }
         return null
 
       case 'sprint':
-        if (state.status) return await message.reply({ content: `There's already a sprint ${state.status}! Join in using \`${prefix}join <wordcount>\``, ephemeral: true })
-        state.status = 'starting'
-        state.sprinters = []
-        if (args.length == 1 && args[0].match(/\:(\d+)/)) {
+        if (state.status) return await message.reply(`There's already a sprint ${state.status}! Join in using \`${prefix}join <wordcount>\``)
+        if (args.length == 1 && args[0].match(/^\:(\d+)$/)) {
           let diff = parseInt(args[0].slice(1)) - (new Date()).getMinutes()
           if (diff > 0) args[1] = diff
           else args[1] = Math.abs(diff + 60)
           args[0] = null
-        } else if (args.length == 2 && args[1].match(/\:(\d+)/)) {
+        } else if ((args.length >= 2 || args.length <= 3) && args[1].match(/^\:(\d+)$/)) {
           let diff = parseInt(args[1].slice(1)) - (new Date()).getMinutes()
           if (diff > 0) args[1] = diff
           else args[1] = Math.abs(diff + 60)
+        } else if (!args.join('').match(/^(\d|:)+$/)) {
+          return await message.reply(`Oops! One of your arguments wasn't a number or time interval. Try again`)
         }
+        state.status = 'starting'
         state.time = (parseInt(args[0]) || defaults.time)
         state.bufferStart = (parseInt(args[1]) || defaults.bufferStart)
         state.bufferEnd = (parseInt(args[2]) || defaults.bufferEnd)
-        await message.channel.send(`**New Sprint!**\r\nIn ${state.bufferStart} minute(s), we're going to be sprinting for ${state.time} minute(s).\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
-
         state.startingTimer = setTimeout(start, ms(state.bufferStart))
         state.runningTimer = setTimeout(run, ms(state.bufferStart) + ms(state.time))
         state.finishingTimer = setTimeout(finish, ms(state.bufferStart) + ms(state.time) + ms(state.bufferEnd))
+        await message.channel.send(`**New Sprint!**\r\nIn ${state.bufferStart} minute(s), we're going to be sprinting for ${state.time} minute(s)${state.bufferEnd != defaults.bufferEnd ? `, with a ${state.bufferEnd} minute(s) ending buffer` : ''}.\r\nUse \`${prefix}join <wordcount>\` to join the sprint; leave out the wordcount to start from zero.`)
         return null
 
       case 'cancel':
-        if (!state.status) return await message.reply({ content: `There's no sprint currently started, start one using \`${prefix}sprint\``, ephemeral: true })
+        if (!state.status) return await message.reply(`There's no sprint currently started, start one using \`${prefix}sprint\``)
         clearState()
         return await message.channel.send(`**Sprint has been canceled!**\r\nStart a new one with \`${prefix}sprint\``)
 
       case 'join':
-        if (!state.status) return await message.reply({ content: `There's no sprint currently started, start a one using \`${prefix}sprint\``, ephemeral: true })
-        if (state.status == 'finishing') return await message.reply({ content: `The sprint has already finished, start one using \`${prefix}sprint\``, ephemeral: true })
+        if (!state.status) return await message.reply(`There's no sprint currently started, start a one using \`${prefix}sprint\``)
+        if (state.status == 'finishing') return await message.reply(`The current sprint is finishing. Once done, start a new one using \`${prefix}sprint\``)
         const wordcount = Math.abs(parseInt(args[0])) || 0
         if (sprinterIndex > -1) {
           state.sprinters[sprinterIndex].wordcount = wordcount
@@ -159,7 +165,7 @@ client.on('message', async (message) => {
         return await message.reply(`Joined with ${wordcount} starting words`)
 
       case 'leave':
-        if (sprinterIndex == -1) return await message.reply({ content: `You need to join a sprint to leave it! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`, ephemeral: true })
+        if (sprinterIndex == -1) return await message.reply(`You need to join a sprint to leave it! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`)
         state.sprinters.splice(sprinterIndex, 1)
         if (state.sprinters.length == 0) {
           clearState()
@@ -168,12 +174,12 @@ client.on('message', async (message) => {
         return await message.reply(`Left the sprint`)
 
       case 'wc':
-        if (!state.status) return await message.reply({ content: `There's no sprint currently running, start one using \`${prefix}sprint\``, ephemeral: true })
-        if (state.status == 'starting') return await message.reply({ content: `The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`, ephemeral: true })
-        if (state.status == 'running') return await message.reply({ content: `The current sprint hasn't finished yet! Use \`${prefix}join\` to join the sprint`, ephemeral: true })
+        if (!state.status) return await message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
+        if (state.status == 'starting') return await message.reply(`The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`)
+        if (state.status == 'running') return await message.reply(`The current sprint hasn't finished yet! Use \`${prefix}join\` to join the sprint`)
         if (!parseInt(args[0])) return await message.reply(errHelp)
         const wc = parseInt(args[0])
-        if (sprinterIndex == -1) return await message.reply({ content: `You need to join the sprint first! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`, ephemeral: true })
+        if (sprinterIndex == -1) return await message.reply(`You need to join the sprint first! Use \`${prefix}join\` ${!state.status ? ' next sprint' : ''}`)
         const delta = wc - state.sprinters[sprinterIndex].wordcount
         state.sprinters[sprinterIndex].wordcount = wc
         state.sprinters[sprinterIndex].delta = delta
@@ -184,15 +190,15 @@ client.on('message', async (message) => {
 
       case 'roll':
         const diceRegex = /(\d+)?[d](\d+)/i
-        if (!args[0]) return await message.reply({ content: rollDice(), ephemeral: true })
-        if (args[0] && !diceRegex.test(args[0])) return await message.reply({ content: errHelp, ephemeral: true })
+        if (!args[0]) return await message.reply(rollDice())
+        if (args[0] && !diceRegex.test(args[0])) return await message.reply(errHelp)
         let diceToRoll = args[0].split(diceRegex).filter(e => e !== '')
-        if (diceToRoll[0] !== undefined) return await message.reply({ content: rollDice(diceToRoll[0], diceToRoll[1]).join(', '), ephemeral: true })
-        return await message.reply({ content: rollDice(false, diceToRoll[1]), ephemeral: true })
+        if (diceToRoll[0] !== undefined) return await message.reply(rollDice(diceToRoll[0], diceToRoll[1]).join(', '))
+        return await message.reply(rollDice(false, diceToRoll[1]))
 
       case 'time':
-        if (!state.status && !state.startTime) return await message.reply({ content: `There's no sprint currently running, start one using \`${prefix}sprint\``, ephemeral: true })
-        if (state.status == 'starting') return await message.reply({ content: `The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`, ephemeral: true })
+        if (!state.status && !state.startTime) return await message.reply(`There's no sprint currently running, start one using \`${prefix}sprint\``)
+        if (state.status == 'starting') return await message.reply(`The current sprint hasn't started yet! Use \`${prefix}join\` to join the sprint`)
         const mins = Math.floor((state.startTime - new Date()) / 1000 / 60)
         return await message.reply(`${mins} minutes left in the sprint!`)
 
@@ -202,8 +208,9 @@ client.on('message', async (message) => {
           'sprint <time>',
           'sprint <time> <bufferStart>',
           'sprint <time> <bufferStart> <bufferEnd>',
-          'sprint :<interval>',
-          'sprint <time> :<interval>',
+          'sprint :<bufferStartInterval>',
+          'sprint <time> :<bufferStartInterval>',
+          'sprint <time> :<bufferStartInterval> <bufferEnd>',
           'join',
           'join <wordcount>',
           'leave',
@@ -223,11 +230,11 @@ client.on('message', async (message) => {
           .setDescription(`Here's all the commands I can run:\r\n\`\`\`${defs.map(d => `${prefix}${d}`).join(`\r\n`)}\`\`\``))
 
       default:
-        return await message.reply({ content: `Sorry, I don't know that command. Use \`${prefix}help\` for a list of available commands`, ephemeral: true })
+        return await message.reply(`Sorry, I don't know that command. Use \`${prefix}help\` for a list of available commands`)
     }
   } catch (e) {
-    console.warn('An error occured', e)
-    await message.reply({ content: `Uh oh! Something didn't work right; try again in a bit!`, ephemeral: true })
+    console.warn('An error occured:', e)
+    await message.reply(`Uh oh! Something didn't work right; try again in a bit!`)
   }
 })
 
