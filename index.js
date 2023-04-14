@@ -35,10 +35,12 @@ client.on('message', async (message) => {
   if (!content.startsWith(prefix) || author.bot) return
   if (!sprints[guildId]) sprints[guildId] = new State()
 
+  console.log(`[${new Date().toISOString()}] ${author}: ${content}`)
+
   const state = sprints[guildId]
   const args = content.slice(prefix.length).trim().split(/ +/)
   const command = args.shift().toLowerCase()
-  
+
   const clearState = () => {
     clearTimeout(state.startingTimer)
     clearTimeout(state.runningTimer)
@@ -119,8 +121,10 @@ client.on('message', async (message) => {
           await message.reply(`Added image to ${args[0]} collection!`)
           await writeConfig(guildId, { prefix, defaults, media })
         } else if (args[1] == 'list') {
-          const list = `\r\n` + media[args[0]].map((u, x) => `[${x + 1}] ${u}`).join(`\r\n`)
-          await message.reply(list)
+          if (media[args[0]].length > 0) {
+            const list = `\r\n` + media[args[0]].map((u, x) => `[${x + 1}] ${u}`).join(`\r\n`)
+            await message.reply(list)
+          } else await message.reply(`No media is currently set for ${args[0]}`)
         } else if (args[1] == 'remove') {
           if (!media[args[0][args[2] - 1]]) return await message.reply(`Sorry, that index doesn't exist`)
           media[args[0]].splice(args[2] - 1, 1)
