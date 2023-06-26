@@ -4,9 +4,9 @@ import { PermissionsBitField } from 'discord.js'
 export const defaultConfig = {
   prefix: '_',
   defaults: {
-    time: 30,
-    bufferStart: 10,
-    bufferEnd: 10
+    time: 15,
+    bufferStart: 1,
+    bufferEnd: 3
   },
   media: {
     waiting: [],
