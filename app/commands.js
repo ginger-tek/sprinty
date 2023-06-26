@@ -116,10 +116,10 @@ export const leaveSprint = async (msg, args) => {
 export const setWordCount = async (msg, args) => {
   if (!state[msg.guildId]) return msg.reply(`No active sprints to complete`)
   if (!state[msg.guildId].isActive()) return msg.reply(`Current sprint hasn't started or has just ended`)
-  if (state[msg.guildId].isRunning()) return msg.reply(`Current sprint is still running. Please wait for the sprint to finish`)
   const sprinterIndex = state[msg.guildId].getSprinter(msg.author)
   if (sprinterIndex === false) return msg.reply(`You must join a sprint first to use that command`)
-  const wc = parseInt(args[0]) || 0
+  if (!args[0]) return msg.reply(`Missing word count argument`)
+  const wc = parseInt(args[0])
   const delta = wc - state[msg.guildId].sprinters[sprinterIndex].wordcount
   state[msg.guildId].sprinters[sprinterIndex].wordcount = wc
   state[msg.guildId].sprinters[sprinterIndex].delta = delta
@@ -142,7 +142,7 @@ export const getTimeLeft = async (msg, args) => {
 export const clearChannel = async (msg, args) => {
   if (!isAdmin(msg)) return await msg.reply(`Sorry, only admins can run this command`)
   const { prefix } = await readConfig(msg.guildId)
-  const deleteMessages = async (msg) => {
+  const deleteMessages = async (msg, total = 0) => {
     let fetched = await msg.channel.messages.fetch({ limit: 99, cache: false })
     fetched = fetched.filter(m => {
       if (m.content[0] == prefix) return true
@@ -151,16 +151,16 @@ export const clearChannel = async (msg, args) => {
         return !m.content.match('results')
       }
     })
-    if (fetched.size == 0) return console.log('no messages to delete')
+    if (fetched.size == 0) return total
     try {
       const results = await msg.channel.bulkDelete(fetched, false)
-      console.log(`↪ deleted ${results.size} messages`)
-      await deleteMessages(msg)
+      return await deleteMessages(msg, total + (results?.size || 0))
     } catch (e) {
-      console.log('↪ failed to delete all messages:', e.message)
+      return await deleteMessages(msg, total)
     }
   }
-  await deleteMessages(msg)
+  const count = await deleteMessages(msg)
+  console.log(`↪ deleted ${count} messages`)
 }
 
 export const setDefault = async (msg, args) => {
