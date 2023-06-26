@@ -30,6 +30,10 @@ There are also three media collections to store image URI's that are randomly pi
 |`passed`|Shown after a the results of a sprint for sprinters who surpassed their word count|
 |`failed`|Shown after a the results of a sprint for sprinters who came in under their word count|
 
+There is also a `prefix` property to define the message command character. This is set to `_` by default.
+
+**It is reccommended to leave the prefix as `_`, as the purpose is to keep things simple and quick when entering commands. Using `/` will break the bot, as slash commands are now their own entity within Discord. If you prefer a different character, you can use most special characters except `/`, `\`, `@`, or `#`, as those are all reserved characters for other actions in Discord.**
+
 ## Commands
 |Command|Description|
 |---|---|
