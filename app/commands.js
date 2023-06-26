@@ -142,21 +142,25 @@ export const getTimeLeft = async (msg, args) => {
 export const clearChannel = async (msg, args) => {
   if (!isAdmin(msg)) return await msg.reply(`Sorry, only admins can run this command`)
   const { prefix } = await readConfig(msg.guildId)
-  let fetched = await msg.channel.messages.fetch({ limit: 99, cache: false })
-  fetched = fetched.filter(m => {
-    if (m.content[0] == prefix) return true
-    if (m.author.bot && m.author.username == 'Sprinty') {
-      if (args[0] == 'all') return true
-      return !m.content.match('results')
+  const deleteMessages = async (msg) => {
+    let fetched = await msg.channel.messages.fetch({ limit: 99, cache: false })
+    fetched = fetched.filter(m => {
+      if (m.content[0] == prefix) return true
+      if (m.author.bot && m.author.username == 'Sprinty') {
+        if (args[0] == 'all') return true
+        return !m.content.match('results')
+      }
+    })
+    if (fetched.size == 0) return console.log('no messages to delete')
+    try {
+      const results = await msg.channel.bulkDelete(fetched, false)
+      console.log(`↪ deleted ${results.size} messages`)
+      await deleteMessages(msg)
+    } catch (e) {
+      console.log('↪ failed to delete all messages:', e.message)
     }
-  })
-  if (fetched.size == 0) return console.log('no messages to delete')
-  try {
-    const results = await msg.channel.bulkDelete(fetched, false)
-    console.log(`↪ deleted ${results.size} messages`)
-  } catch (e) {
-    console.log('↪ failed to delete all messages:', e.message)
   }
+  await deleteMessages(msg)
 }
 
 export const setDefault = async (msg, args) => {
