@@ -102,8 +102,9 @@ export const joinSprint = async (msg, args) => {
   if (!state[msg.guildId]) return msg.reply(`No active sprints to join`)
   if (!state[msg.guildId].isActive()) return msg.reply(`Current sprint hasn't started or has just ended`)
   const wordcount = Math.abs(parseInt(args[0])) || 0
-  state[msg.guildId].addSprinter(msg.author, wordcount)
-  await msg.reply(`Joined with ${wordcount} starting words`)
+  const result = state[msg.guildId].addSprinter(msg.author, wordcount)
+  if (result === 2) await msg.reply(`Updated starting words to ${wordcount}`)
+  else await msg.reply(`Joined with ${wordcount} starting words`)
 }
 
 export const leaveSprint = async (msg, args) => {
@@ -111,6 +112,11 @@ export const leaveSprint = async (msg, args) => {
   if (!state[msg.guildId].isActive()) return msg.reply(`Current sprint hasn't started or has just ended`)
   const wordcount = Math.abs(parseInt(args[0])) || 0
   state[msg.guildId].removeSprinter(msg.author)
+  await msg.reply(`Left current sprint. See you next time!`)
+  if (state[msg.guildId].sprinters.length === 0) {
+    await msg.channel.send(`Everyone left the current sprint; auto-cancelling`)
+    cancelSprint(msg)
+  }
 }
 
 export const setWordCount = async (msg, args) => {
