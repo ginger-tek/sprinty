@@ -1,9 +1,11 @@
-<img src="https://raw.githubusercontent.com/jpmoormann/sprinty/main/Sprinty-logo.png" style="margin:0 auto;width:150px;display:block;text-align:center"/>
-<h1 style="text-align:center"><strong>Sprinty</strong></h1>
-<h2 style="text-align:center">A *better* writers' sprint bot</h2>
-<p style="text-align:center">Run writing sprints with your friends or writing group, and share your word counts.<br><br>
-Built using Node.js + discord.js</p>
-<hr>
+<img src="https://raw.githubusercontent.com/jpmoormann/sprinty/main/Sprinty-logo.png" style="display:block;width:150px"/>
+
+# **Sprinty**
+## A *better* writers' sprint bot
+
+Run writing sprints with your friends or writing group, and share your word counts.
+
+Built using Node.js + discord.js
 
 ## Host Config
 To host your own Sprinty server, add a `.env` file in the root of the app, and add your bot token:
