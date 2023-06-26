@@ -16,7 +16,7 @@ export const defaultConfig = {
 }
 
 export async function readConfig(guildId) {
-  const path = `app/data/${guildId}.json`
+  const path = `data/${guildId}.json`
   try { await fs.access(path) } catch (e) {
     await writeConfig(guildId, defaultConfig)
   }
@@ -24,7 +24,7 @@ export async function readConfig(guildId) {
 }
 
 export async function writeConfig(guildId, data) {
-  const path = `app/data/${guildId}.json`
+  const path = `data/${guildId}.json`
   await fs.writeFile(path, JSON.stringify(data, null, 2))
   return true
 }
