@@ -52,7 +52,7 @@ export function isAdmin(msg) {
 }
 
 export function ms(t) {
-  return t * 1000 //60000
+  return t * 60000
 }
 
 export default {

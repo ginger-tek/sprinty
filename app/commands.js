@@ -200,7 +200,7 @@ export const randomDiceRoll = async (msg, args) => {
   if (!args[0]) return await msg.reply(rollDice())
   if (args[0] && !diceRegex.test(args[0])) return await msg.reply(`Invalid input, try again`)
   let diceToRoll = args[0].split(diceRegex).filter(e => e !== '')
-  if (diceToRoll[0] !== undefined) return await msg.reply(rollDice(diceToRoll[0], diceToRoll[1]).join(', '))
+  if (diceToRoll[0] !== undefined) return await msg.reply(rollDice(diceToRoll[0], diceToRoll[1]))
   return await msg.reply(rollDice(false, diceToRoll[1]))
 }
 
