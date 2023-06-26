@@ -55,10 +55,23 @@ export function ms(t) {
   return t * 60000
 }
 
+export const logger = {
+  log(...args) {
+    console.log(new Date().toISOString(), ...args)
+  },
+  wrn(...args) {
+    console.warn(new Date().toISOString(), ...args)
+  },
+  err(...args) {
+    console.error(new Date().toISOString(), ...args)
+  }
+}
+
 export default {
   readConfig,
   writeConfig,
   random,
   rollDice,
+  logger,
   ms
 }

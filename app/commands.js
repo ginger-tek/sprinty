@@ -1,4 +1,4 @@
-import { readConfig, writeConfig, ms, random, isAdmin, rollDice } from './utils.js'
+import { readConfig, writeConfig, ms, random, isAdmin, rollDice, logger } from './utils.js'
 import { hideLinkEmbed } from 'discord.js'
 import Sprint from './sprint.js'
 
@@ -166,7 +166,7 @@ export const clearChannel = async (msg, args) => {
     }
   }
   const count = await deleteMessages(msg)
-  console.log(`↪ deleted ${count} messages`)
+  logger.log(`↪ deleted ${count} messages`)
 }
 
 export const setDefault = async (msg, args) => {
