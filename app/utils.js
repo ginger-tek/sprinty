@@ -4,7 +4,7 @@ import { PermissionsBitField } from 'discord.js'
 export const defaultConfig = {
   prefix: '_',
   defaults: {
-    time: 15,
+    runTime: 15,
     bufferStart: 1,
     bufferEnd: 3
   },
