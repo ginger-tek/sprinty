@@ -53,4 +53,4 @@ export default class Sprint {
   sprintersToString() {
     return this.sprinters.map(s => s.author).join('')
   }
-}                     
+}                                         
