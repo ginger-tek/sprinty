@@ -44,7 +44,10 @@ export default class Sprint {
 
   removeSprinter(author) {
     const index = this.getSprinter(author)
-    if (index !== false) this.sprinters.splice(index, 1)
+    if (index !== false) {
+      this.sprinters.splice(index, 1)
+      return true
+    } else return false
   }
 
   getSprinter(author) {

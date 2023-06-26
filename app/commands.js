@@ -111,7 +111,8 @@ export const leaveSprint = async (msg, args) => {
   if (!state[msg.guildId]) return msg.reply(`No active sprints to leave`)
   if (!state[msg.guildId].isActive()) return msg.reply(`Current sprint hasn't started or has just ended`)
   const wordcount = Math.abs(parseInt(args[0])) || 0
-  state[msg.guildId].removeSprinter(msg.author)
+  const result = state[msg.guildId].removeSprinter(msg.author)
+  if (result === false) return msg.reply(`You need to join a sprint first`)
   await msg.reply(`Left current sprint. See you next time!`)
   if (state[msg.guildId].sprinters.length === 0) {
     await msg.channel.send(`Everyone left the current sprint; auto-cancelling`)
